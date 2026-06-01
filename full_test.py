@@ -55,10 +55,11 @@ def main() -> int:
     print(result.summary())
     print()
     if result.passed:
-        print("✓✓✓ PASSES Phase A. Ready to submit.")
+        print("✓ ADMITTED. Skill is decided in Phase B (60-day forward) + the held-out rerun.")
+        print(f"  Robustness profile: avg Calmar {result.avg_calmar:.2f}, worst DD {result.worst_drawdown:.1%}")
     else:
-        print("✗ FAILS Phase A:", result.reason)
-        print("  ↑ this is the same scoring you'll see when you submit.")
+        print("✗ NOT ADMITTED:", result.reason)
+        print("  (admission only screens out constraint breaches + >50% blow-ups)")
     return 0
 
 

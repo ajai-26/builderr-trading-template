@@ -68,10 +68,10 @@ def main() -> int:
     print(result.summary())
     print()
     if result.passed:
-        print("✓ Would PASS Phase A under these criteria (1 regime tested, not all 3).")
+        print("✓ Would be ADMITTED (smoke + constraints). Skill is decided in Phase B + rerun.")
     else:
-        print("✗ Would FAIL Phase A. Reason:", result.reason)
-        print("  Note: this is 1 regime + coarse ticks. Real Phase A is harder.")
+        print("✗ NOT ADMITTED. Reason:", result.reason)
+        print("  (admission only screens constraint breaches + >50% blow-ups)")
     return 0
 
 

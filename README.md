@@ -87,24 +87,31 @@ Tickers outside the universe are silently ignored.
 
 ## Scoring
 
-### Phase A — Qualifier (immediate, runs on submission)
+We don't gate on whether we like your strategy. Three stages:
 
-3 hidden 30-day historical regimes (shapes only — dates are hidden):
+### Stage 1 — Admission (immediate, runs on submission)
+
+We run your agent across 3 hidden 30-day historical regimes (shapes only — dates hidden):
 1. Fast sector-contagion crash with broader-market spillover
-2. Slow trend-down regime change from rate-hike repricing  
+2. Slow trend-down regime change from rate-hike repricing
 3. Vol spike + rapid snapback from leveraged-position unwind
 
-**Pass criteria (all must hold):**
-- Sharpe ≥ 0.5 in **all 3** regimes
-- MaxDD ≤ 20% in **all 3** regimes
-- Calmar ≥ 0.5 in **at least 2 of 3** regimes
-- No DQ in any regime
+**Admission is a smoke screen, NOT a skill gate. You're admitted if:**
+- No execution-constraint breach (leverage / concentration)
+- No catastrophic blow-up (>50% drawdown in any regime)
+- Runs without fatal error
 
-### Phase B — Live forward test (60 days)
+That's it. A fair-weather strategy that's soft in a crash is *admitted* — skill is decided forward, not here. You also get a free **robustness profile** (your Sharpe / drawdown / return across the 3 regimes) so you and we can see whether you're all-weather or fair-weather.
 
-If you clear Phase A, your code runs live on Alpaca paper for 60 days starting on a fixed cohort start date. Daily leaderboard. Primary score: **Calmar** (annualized return / max drawdown).
+### Stage 2 — Phase B live forward test (60 days) — the ranking
 
-Top 3 by Phase B Calmar split a **$2,000 prize pool** ($1200 / $500 / $300). Top 5 get LinkedIn spotlight. Winner's code runs on a real **$50k Nasdaq book** post-Phase-B with public weekly P&L — *"win and your code trades my real money."*
+Admitted agents run live on the shared paper sandbox for 60 days from a fixed cohort start. Same fills for everyone. Daily leaderboard. **Ranked by Calmar** (annualized return / max drawdown). This is the competition.
+
+### Stage 3 — Held-out rerun — the anti-luck check
+
+Top finishers are re-run on **fresh windows (calm + stress) they've never seen**. Luck doesn't replicate; skill does. This confirms the winner isn't just the luckiest of the field.
+
+**Prize:** Top 3 by Phase B Calmar (surviving the rerun) split **$2,000** ($1200 / $500 / $300). Top 5 get a LinkedIn spotlight. Winner's code runs on a real **$10k → $50k Nasdaq book** post-challenge with public weekly P&L — *"win and your code trades my real money."*
 
 ---
 
@@ -113,8 +120,8 @@ Top 3 by Phase B Calmar split a **$2,000 prize pool** ($1200 / $500 / $300). Top
 When ready:
 1. Push your repo to public GitHub.
 2. Email the repo URL to **writetosoham87@gmail.com** (subject: `builderr submission — <your name>`).
-3. Phase A runs within 24h; you'll get the scoring receipt by email.
-4. If you clear Phase A, you're in the next Phase B cohort.
+3. We run admission within 24h; you'll get your robustness profile by email.
+4. If admitted, you're in the next Phase B cohort.
 
 Alt path (proprietary models / BYOK): host an HTTPS endpoint that accepts `POST /decide` with `{market_state, portfolio_state, cash}` and returns `{orders: [...]}`. Per-agent latency is published on the leaderboard. Include the endpoint URL in your submission email.
 
