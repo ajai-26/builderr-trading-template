@@ -27,16 +27,16 @@ So always give your bot a way to **step to cash**. That habit beats every fancy 
 
 ---
 
-## A complete recipe you can copy
+## A complete recipe you can copy — the AI play
 
-This is **dual momentum + a safety switch** — the public, well-worn backbone of robust trading. Boring. Boring survives.
+Bet on the AI boom, but don't get caught when it turns. You can say the whole thing in one sentence: **hold the strongest AI & chip stocks while they're going up, and move to cash when the market rolls over.**
 
-- **Universe:** a basket you believe in. AI/chips (NVDA, AMD, MU, MRVL, AVGO, SMH), or broad (QQQ + the sector ETFs). Your call.
-- **Every day:** rank the basket by 3-month return. Hold the **top 3–4 equally, max 25% each** — but only the ones trading **above their 50-day average**.
-- **Safety switch:** if **QQQ is below its 100-day average**, hold **100% cash**. Full stop. This is the part that saves you.
-- **Housekeeping:** rebalance about once a week (not every tick), keep total leverage under 1.4×, long-only.
+- **What you hold:** the AI / chip leaders — NVDA, AMD, MU, MRVL, AVGO, SMH. (Believe in something else — robotics, nuclear, whatever? Swap in your own basket.)
+- **Every day:** keep the **3–4 strongest** (biggest gain over the last 3 months), split evenly, **max 25% each** — but only the ones still **trending up** (trading above their recent average, not falling).
+- **The safety switch:** if the overall market (QQQ) drops **below its long-term average**, go to **100% cash**. Full stop. This is the part that saves you in a crash — and it's exactly what the scoring rewards.
+- **Keep it calm:** rebalance about once a week (not every minute), no heavy leverage, long-only.
 
-That's the whole thing. Four moves, one safety switch.
+That's the whole thing. Pick a theme you believe in, ride the winners, and always keep a way out.
 
 ## Paste this into your AI to build it
 
@@ -50,7 +50,7 @@ Then run `python preview.py`. A green **PASS** means you're in.
 
 ## Why I'm happy to give this away
 
-This recipe isn't the secret sauce — it's the *public* backbone everyone in systematic trading already knows. The edge was never the recipe; it's the discipline and the small, smart choices you layer on top. There's plenty of room to do better than this. That's the whole point — **go build something that beats it.**
+This recipe isn't a secret — it's a simple, well-known approach anyone can find. The edge was never the recipe; it's the discipline and the small, smart choices you add on top. There's plenty of room to do better. That's the whole point — **go build something that beats it.**
 
 ## What NOT to do (the traps)
 
