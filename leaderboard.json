@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-06-05T23:17:32Z",
+  "generated_at_utc": "2026-06-06T00:50:40Z",
   "as_of_market_date": "2026-06-05",
   "round_start": "2026-06-02",
   "start_cash": 100000.0,
@@ -12,6 +12,14 @@
       "pnl": -2017.05,
       "ret": -0.0202,
       "trades": 4
+    },
+    {
+      "name": "shyam",
+      "label": "round 1 \u00b7 entrant",
+      "equity": 97796.54,
+      "pnl": -2203.46,
+      "ret": -0.022,
+      "trades": 6
     },
     {
       "name": "vol-target",
@@ -44,6 +52,14 @@
       "pnl": -4458.63,
       "ret": -0.0446,
       "trades": 6
+    },
+    {
+      "name": "harsimran",
+      "label": "round 1 \u00b7 entrant",
+      "equity": 95339.38,
+      "pnl": -4660.62,
+      "ret": -0.0466,
+      "trades": 8
     },
     {
       "name": "ai-momentum-basket",
