@@ -96,12 +96,12 @@ _BETA: dict[str, float] = {
 MAX_WEIGHT          = 0.24    # Hard per-ticker cap (DQ threshold is 0.30)
 DRIFT_LIMIT         = 0.27    # Drift rebalance trigger
 MAX_BETA_GROSS      = 1.32    # Well under the 1.50 DQ threshold
-MIN_TRADE_PCT       = 0.015   # Skip orders smaller than 1.5% of equity
-REBALANCE_EVERY     = 5       # Calendar-based rebalance every N trading days
+MIN_TRADE_PCT       = 0.025   # Skip orders smaller than 2.5% of equity (was 1.5% — reduces churn)
+REBALANCE_EVERY     = 7       # Rebalance every 7 trading days (was 5 — cuts trade count)
 
-# Drawdown circuit-breaker levels
-_DD_HALF    = 0.05    # -5%  from peak → HALF_RISK
-_DD_FULL    = 0.10    # -10% from peak → DEFENSIVE
+# Drawdown circuit-breaker levels  (tightened after admission feedback)
+_DD_HALF    = 0.03    # -3%  from peak → HALF_RISK  (was 5%)
+_DD_FULL    = 0.07    # -7%  from peak → DEFENSIVE  (was 10%)
 
 # Momentum look-back (in trading days) — sized to fit 220-bar warmup
 _MOM_LONG   = 60      # Primary: ~3 months (works from day 1 with 220-bar warmup)
@@ -280,6 +280,12 @@ def _regime(ms: dict[str, list[dict[str, Any]]], drawdown: float) -> str:
     if len(spy) < 50 or len(qqq) < 50:
         return "DEFENSIVE"   # Not enough data → safe default
 
+    # --- Single-day shock detector (catches vol spikes before drawdown accumulates) ---
+    # If SPY dropped >2% today OR QQQ dropped >2.5% today, immediately step down one level
+    spy_day_ret = (spy[-1] / spy[-2] - 1.0) if len(spy) >= 2 and spy[-2] > 0 else 0.0
+    qqq_day_ret = (qqq[-1] / qqq[-2] - 1.0) if len(qqq) >= 2 and qqq[-2] > 0 else 0.0
+    shock_today = spy_day_ret < -0.020 or qqq_day_ret < -0.025
+
     spy50  = _sma(spy, 50)
     qqq50  = _sma(qqq, 50)
     spy200 = _sma(spy, 200)
@@ -299,10 +305,12 @@ def _regime(ms: dict[str, list[dict[str, Any]]], drawdown: float) -> str:
     ]
     score = sum(sigs)
 
-    if score >= 5:
+    if score >= 5 and not shock_today:
         return "FULL_RISK"
-    if score >= 3:
+    if score >= 3 and not shock_today:
         return "HALF_RISK"
+    if score >= 5 and shock_today:
+        return "HALF_RISK"   # Shock knocks FULL_RISK down one level
     return "DEFENSIVE"
 
 # ---------------------------------------------------------------------------
@@ -310,15 +318,25 @@ def _regime(ms: dict[str, list[dict[str, Any]]], drawdown: float) -> str:
 # ---------------------------------------------------------------------------
 
 def _score(t: str, ms: dict[str, list[dict[str, Any]]], spy_cs: list[float]) -> float | None:
-    """Composite quality-momentum score, or None if not rankable."""
+    """Composite quality-momentum score, or None if not rankable.
+
+    Factors (in order of weight):
+      60d momentum       — primary trend direction
+      20d momentum       — short-term confirmation
+      Momentum accel     — is the trend speeding up or slowing down?
+      Trend gap          — price vs 50d SMA (capped at 15% to avoid overextension)
+      Relative strength  — outperformance vs SPY
+      Volume confirm     — rising volume on up-moves = stronger signal
+    All divided by realised vol → rewards Sharpe-efficient assets.
+    """
     cs = _closes(ms.get(t))
     if len(cs) < max(_MOM_LONG + 1, 51):
         return None
 
-    m60  = _mom(cs, _MOM_LONG)
-    m20  = _mom(cs, _MOM_SHORT)
-    s50  = _sma(cs, 50)
-    v20  = _rvol(cs, _VOL_WINDOW)
+    m60 = _mom(cs, _MOM_LONG)
+    m20 = _mom(cs, _MOM_SHORT)
+    s50 = _sma(cs, 50)
+    v20 = _rvol(cs, _VOL_WINDOW)
 
     if None in (m60, m20, s50, v20):
         return None
@@ -327,15 +345,41 @@ def _score(t: str, ms: dict[str, list[dict[str, Any]]], spy_cs: list[float]) -> 
     if m60 < -0.03:
         return None
 
-    trend_gap = cs[-1] / s50 - 1.0
+    # Trend gap — cap at 15% to avoid overextended/overbought assets
+    raw_gap   = cs[-1] / s50 - 1.0
+    trend_gap = min(raw_gap, 0.15)
+
+    # Momentum acceleration: positive = trend is speeding up (bullish)
+    # m20 > m60 means the short window is stronger than the long window
+    accel = float(m20) - float(m60)
 
     # Relative strength vs SPY (20-day)
     spy_m20 = _mom(spy_cs, _MOM_SHORT) if spy_cs else None
-    rs = (m20 - spy_m20) if spy_m20 is not None else 0.0
+    rs = (float(m20) - spy_m20) if spy_m20 is not None else 0.0
 
-    raw = 0.50 * m60 + 0.25 * m20 + 0.15 * trend_gap + 0.10 * rs
-    # Divide by vol to reward Sharpe-efficient assets
-    return raw / max(float(v20), 0.05)
+    # Volume confirmation: above-average volume on recent bars boosts the score
+    # Absent/weak volume on a rising price is a yellow flag
+    vol_confirm = 1.0
+    bars = ms.get(t) or []
+    if len(bars) >= 21:
+        try:
+            vols = [max(float(b.get("volume", 0)), 0.0) for b in bars[-21:]]
+            avg_v = mean(vols[:-1])   # 20-day average (excluding today)
+            if avg_v > 0:
+                ratio = vols[-1] / avg_v
+                # Multiplier: 0.85 (low vol) → 1.0 (avg vol) → 1.15 (high vol)
+                vol_confirm = max(0.85, min(1.15, 0.90 + 0.25 * min(ratio, 1.0)))
+        except (TypeError, ValueError):
+            pass
+
+    raw = (
+        0.42 * float(m60)
+        + 0.22 * float(m20)
+        + 0.12 * accel
+        + 0.14 * trend_gap
+        + 0.10 * rs
+    )
+    return raw / max(float(v20), 0.05) * vol_confirm
 
 # ---------------------------------------------------------------------------
 # Weight construction
@@ -421,13 +465,13 @@ def _targets(ms: dict[str, list[dict[str, Any]]], reg: str) -> dict[str, float]:
     scored.sort(reverse=True)
 
     if reg == "HALF_RISK":
-        # 50% top-4 momentum, 50% defensive
-        mom_w = _inv_vol_weights(scored, ms, 4, 0.50)
+        # 40% top-3 momentum, 60% defensive — more conservative than before
+        # (admission feedback: vol-spike drawdown was too deep at 25.8%)
+        mom_w = _inv_vol_weights(scored, ms, 3, 0.40)
         def_w = _defensive_weights(ms)
-        # Blend: defensive part scaled to 50% budget
         total_def = sum(def_w.values()) or 1.0
         for t, w in def_w.items():
-            mom_w[t] = mom_w.get(t, 0.0) + w / total_def * 0.50
+            mom_w[t] = mom_w.get(t, 0.0) + w / total_def * 0.60
         return _cap(_port_vol_scale(mom_w, ms))
 
     # FULL_RISK
@@ -447,8 +491,8 @@ def _targets(ms: dict[str, list[dict[str, Any]]], reg: str) -> dict[str, float]:
         and _closes(ms.get("SSO"))
     )
 
-    n_picks    = 6 if use_2x else 7
-    base_bud   = 0.80 if use_2x else 0.95
+    n_picks    = 6 if use_2x else 5
+    base_bud   = 0.80 if use_2x else 0.92
     weights    = _inv_vol_weights(scored, ms, n_picks, base_bud)
 
     # Fallback: if no scored assets, use SPY + QQQ
@@ -522,7 +566,7 @@ def _orders(
             ords.append({"ticker": t, "side": "buy", "quantity": buy_q})
             spendable -= buy_q * price
 
-    return ords[:45]   # Stay under 50 trades/day cap
+    return ords[:28]   # Hard cap well under 50 trades/day (admission feedback)
 
 # ---------------------------------------------------------------------------
 # Entry point
@@ -582,7 +626,7 @@ def decide(market_state: dict, portfolio_state: dict, cash: float) -> list[dict]
         ]
         _last_date   = today
         _last_regime = reg
-        return liq[:45]
+        return liq[:28]
 
     px   = _prices(market_state)
     pos  = _positions(portfolio_state)
