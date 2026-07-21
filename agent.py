@@ -16,33 +16,33 @@ EXIT_BAND: float = 0.008
 VOL_SIZE: int = 20
 VOL_BRAKE: int = 10
 VOL_FULL_MAX: float = 0.30
-BRAKE_VOL10: float = 0.45
-BRAKE_R3: float = -0.045
+BRAKE_VOL10: float = 0.40
+BRAKE_R3: float = -0.040
 BREADTH_MIN: float = 0.50
 TOP_N_MAX: int = 5
 NAME_CAP: float = 0.26
 CORE_FULL: float = 0.67
 CORE_NEUTRAL: float = 0.85
 SLEEVE_DOLLAR_FULL: float = 0.33
-SLEEVE_DOLLAR_ULTRA: float = 0.44  
+SLEEVE_DOLLAR_ULTRA: float = 0.44   
 ULTRA_VOL_MAX: float = 0.18         
-ULTRA_BREADTH_MIN: float = 0.70     
+ULTRA_BREADTH_MIN: float = 0.70    
 MAX_BETA_GROSS: float = 1.45
-DD_HALF: float = -0.06
-DD_LOCK: float = -0.10
+DD_HALF: float = -0.04
+DD_LOCK: float = -0.07
 TAPER_HALF: float = 0.50
 TAPER_LOCK: float = 0.25
 TRAIL_STOP: float = 0.08
-STOP_COOLDOWN_DAYS: int = 3
+STOP_COOLDOWN_DAYS: int = 4
 REBALANCE_DAYS: int = 3
-COOLDOWN_DAYS: int = 3
+COOLDOWN_DAYS: int = 4
 DRIFT_LIMIT: float = 0.28
 MIN_TRADE_PCT: float = 0.03
 CASH_BUFFER: float = 0.98
 MAX_ORDERS: int = 45
 MIN_BARS: int = 51
 THRUST_LOOKBACK: int = 10
-THRUST_MIN_RET: float = 0.10
+THRUST_MIN_RET: float = 0.14
 
 INDEX_REF: tuple[str, ...] = ("SPY", "QQQ")
 LEADER_STOCKS: tuple[str, ...] = (
@@ -501,6 +501,8 @@ def _run(
     brake_fired = (
         (qqq_r3 is not None and qqq_r3 < BRAKE_R3)
         or (qqq_vol10 is not None and qqq_vol10 > BRAKE_VOL10)
+        or (_ret(qqq_closes, 1) is not None and _ret(qqq_closes, 1) < -0.025)
+        or (_ret(spy_closes, 1) is not None and _ret(spy_closes, 1) < -0.025)
     )
     hard_cash = (
         brake_fired
@@ -516,6 +518,7 @@ def _run(
         qqq_ret10 is not None and qqq_ret10 > THRUST_MIN_RET
         and qqq_sma_fast is not None and qqq_close > qqq_sma_fast
         and len(qqq_closes) >= 2 and qqq_close > qqq_closes[-2]
+        and qqq_vol20 is not None and qqq_vol20 < 0.32
     )
     if (
         prev_cycle_state == "CASH"
