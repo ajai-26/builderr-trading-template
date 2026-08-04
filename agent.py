@@ -12,37 +12,37 @@ NAME_SMA: int = 50
 IDX_SMA_FAST: int = 20
 IDX_SMA_SLOW: int = 50
 ENTER_BAND: float = 0.002
-EXIT_BAND: float = 0.008
+EXIT_BAND: float = 0.015
 VOL_SIZE: int = 20
 VOL_BRAKE: int = 10
 VOL_FULL_MAX: float = 0.30
-BRAKE_VOL10: float = 0.40
-BRAKE_R3: float = -0.040
+BRAKE_VOL10: float = 0.55
+BRAKE_R3: float = -0.075
 BREADTH_MIN: float = 0.50
 TOP_N_MAX: int = 5
-NAME_CAP: float = 0.26
-CORE_FULL: float = 0.67
-CORE_NEUTRAL: float = 0.85
-SLEEVE_DOLLAR_FULL: float = 0.33
-SLEEVE_DOLLAR_ULTRA: float = 0.44   # boosted sleeve when trend is exceptionally clean
-ULTRA_VOL_MAX: float = 0.18         # QQQ 20-day vol must be below this for ultra mode
-ULTRA_BREADTH_MIN: float = 0.70     # 70%+ of leaders above 50d SMA = very healthy market
-MAX_BETA_GROSS: float = 1.45
-DD_HALF: float = -0.04
-DD_LOCK: float = -0.07
-TAPER_HALF: float = 0.50
-TAPER_LOCK: float = 0.25
-TRAIL_STOP: float = 0.08
-STOP_COOLDOWN_DAYS: int = 2
+NAME_CAP: float = 0.27
+CORE_FULL: float = 0.78
+CORE_NEUTRAL: float = 0.92
+SLEEVE_DOLLAR_FULL: float = 0.40
+SLEEVE_DOLLAR_ULTRA: float = 0.52
+ULTRA_VOL_MAX: float = 0.18
+ULTRA_BREADTH_MIN: float = 0.70
+MAX_BETA_GROSS: float = 1.32
+DD_HALF: float = -0.13
+DD_LOCK: float = -0.22
+TAPER_HALF: float = 0.75
+TAPER_LOCK: float = 0.50
+TRAIL_STOP: float = 0.10
+STOP_COOLDOWN_DAYS: int = 1
 REBALANCE_DAYS: int = 3
 COOLDOWN_DAYS: int = 2
-DRIFT_LIMIT: float = 0.28
+DRIFT_LIMIT: float = 0.285
 MIN_TRADE_PCT: float = 0.03
 CASH_BUFFER: float = 0.98
 MAX_ORDERS: int = 45
 MIN_BARS: int = 51
 THRUST_LOOKBACK: int = 10
-THRUST_MIN_RET: float = 0.10
+THRUST_MIN_RET: float = 0.06
 
 INDEX_REF: tuple[str, ...] = ("SPY", "QQQ")
 LEADER_STOCKS: tuple[str, ...] = (
@@ -55,7 +55,7 @@ LEADER_ETFS: tuple[str, ...] = (
     "XLP", "XLU", "XLRE", "DIA", "IWM", "SOXX",
 )
 LEADER_POOL: tuple[str, ...] = tuple(dict.fromkeys(LEADER_STOCKS + LEADER_ETFS))
-SLEEVE: tuple[str, ...] = ("QLD", "SSO")
+SLEEVE: tuple[str, ...] = ("TQQQ", "SOXL", "QLD", "SSO")
 BETA: dict[str, float] = {
     "QLD": 2.0, "SSO": 2.0, "DDM": 2.0, "ROM": 2.0, "UWM": 2.0, "AGQ": 2.0,
     "TQQQ": 3.0, "SOXL": 3.0, "UPRO": 3.0, "SPXL": 3.0, "TNA": 3.0, "FAS": 3.0,
@@ -501,8 +501,8 @@ def _run(
     brake_fired = (
         (qqq_r3 is not None and qqq_r3 < BRAKE_R3)
         or (qqq_vol10 is not None and qqq_vol10 > BRAKE_VOL10)
-        or (_ret(qqq_closes, 1) is not None and _ret(qqq_closes, 1) < -0.025)
-        or (_ret(spy_closes, 1) is not None and _ret(spy_closes, 1) < -0.025)
+        or (_ret(qqq_closes, 1) is not None and _ret(qqq_closes, 1) < -0.045)
+        or (_ret(spy_closes, 1) is not None and _ret(spy_closes, 1) < -0.045)
     )
     hard_cash = (
         brake_fired
@@ -611,3 +611,4 @@ def _run(
     _prev_taper_mult = taper_mult
     _last_seen_date = current_date
     return orders
+
